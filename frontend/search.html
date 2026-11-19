@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08080D">
+  <meta name="description" content="CHILLFLIX: your world of Asian entertainment.">
+  <title>Search · CHILLFLIX</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <main class="wrap page-top">
+    <header class="page-head"><div><h1>Search</h1><p class="muted" id="summary" aria-live="polite"></p></div></header>
+    <form id="searchForm" role="search" style="display:grid;gap:14px;margin-bottom:24px">
+      <label class="sr-only" for="q">Search titles</label>
+      <input id="q" type="search" placeholder="Search movies, series, anime" autocomplete="off" autofocus>
+      <div class="chips" id="types" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-ghost btn-sm" data-type="">All</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-type="movie">Movies</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-type="series">Series</button>
+      </div>
+    </form>
+    <div id="results"></div>
+  </main>
+  <script type="module" src="js/search.js"></script>
+</body>
+</html>

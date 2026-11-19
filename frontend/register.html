@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08080D">
+  <meta name="description" content="CHILLFLIX: your world of Asian entertainment.">
+  <title>Create your account · CHILLFLIX</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body data-mode="register">
+  <main class="auth-wrap">
+    <div class="auth-card">
+      <form id="authForm" novalidate>
+        <h1>Create your account</h1><p class="sub">Free to join. Upgrade any time.</p>
+      <div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" required><span class=hint>3 to 24 letters, numbers or underscores.</span></div>
+      <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required><span class=hint>At least 8 characters with letters and numbers.</span></div>
+      <div class="field"><label for="confirm">Confirm password</label><input id="confirm" name="confirm" type="password" autocomplete="new-password" required></div>
+        <p class="form-error" id="formError" role="alert"></p>
+        <button class="btn btn-primary" id="submit">Create account</button>
+        <div class="auth-links"><span>Already have an account? <a href="login.html">Log in</a></span></div>
+      </form>
+      <div id="done" hidden></div>
+    </div>
+  </main>
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>
