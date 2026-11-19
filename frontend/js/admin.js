@@ -43,7 +43,10 @@ const tabs = {
       const r = await api(`/admin/titles?type=${type}&page=${page}&q=${encodeURIComponent(q)}`);
       el.innerHTML = `<div class="admin-bar"><select id="ctype" aria-label="Type"><option value="movie" ${type === "movie" ? "selected" : ""}>Movies</option><option value="series" ${type === "series" ? "selected" : ""}>Series</option></select>
         <input type="search" id="cq" placeholder="Search title" value="${esc(q)}"><button class="btn btn-ghost btn-sm" id="cgo">Search</button><span style="flex:1"></span>
-        <button class="btn btn-primary btn-sm" id="cadd">Add title</button><button class="btn btn-ghost btn-sm" id="cimp">Import from TMDB</button></div>
+        <button class="btn btn-primary btn-sm" id="cadd">Add title</button>
+        <button class="btn btn-ghost btn-sm" id="cimp">Import from TMDB</button>
+        ${type === "movie" ? '<button class="btn btn-primary btn-sm" id="cquick">Quick Publish</button>' : ""}
+        </div>
         <p class="muted" style="margin-bottom:12px">${r.total} ${type === "movie" ? "movies" : "series"}</p>
         ${r.items.length ? table(["", "Title", "Year", "Rating", "Source", "Playable", ""], r.items.map((t) => `<tr><td>${t.poster ? `<img class="thumb-sm" src="${esc(t.poster)}" alt="" loading="lazy">` : `<div class="thumb-sm"></div>`}</td><td>${esc(t.title)}</td><td>${t.year ?? "—"}</td><td>${t.rating ? Number(t.rating).toFixed(1) : "—"}</td><td>${esc(t.source || "")}</td><td>${t.has_sources ? pill("ok") : "—"}</td>
           <td class="row-actions"><button class="btn btn-ghost btn-sm" data-edit="${t.id}">Edit</button><button class="btn btn-ghost btn-sm" data-src="${t.id}">Sources</button><button class="btn btn-danger btn-sm" data-del="${t.id}">Delete</button></td></tr>`)) : emptyState("No titles", "Add one, import from TMDB or run a synchronization.")}
@@ -132,6 +135,86 @@ function titleForm(t, type, done) {
       if (t) await api(`/admin/titles/${type}/${t.id}`, { method: "PUT", body }); else await api("/admin/titles", { method: "POST", body: { ...body, media_type: type } });
       m.close(); toast("Saved", "success"); done();
     } catch (err) { $("#tfErr").textContent = err.message; }
+  };
+}
+
+function quickPublishForm(done) {
+  const m = modal(`
+    <h2>Quick Publish Movie</h2>
+    <p class="muted">
+      Import movie details and attach a playback source.
+    </p>
+
+    <form id="qpf">
+      ${field("qp-id", "TMDB movie ID", "", "type=number min=1 required")}
+      ${field("qp-url", "Authorised video URL (optional)", "", "type=url")}
+
+      <div class="field">
+        <label for="qp-type">Format</label>
+        <select id="qp-type">
+          <option value="mp4">MP4</option>
+          <option value="hls">HLS</option>
+        </select>
+      </div>
+
+      ${field("qp-quality", "Quality", "auto")}
+      ${field("qp-language", "Language", "original")}
+
+      <label>
+        <input type="checkbox" id="qp-premium">
+        Premium-only source
+      </label>
+
+      <p class="form-error" id="qpfErr"></p>
+      <button class="btn btn-primary">Import &amp; Publish</button>
+    </form>
+  `);
+
+  $("#qpf").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const url = $("#qp-url").value.trim();
+
+    const body = {
+      media_type: "movie",
+      tmdb_id: Number($("#qp-id").value)
+    };
+
+    if (url) {
+      body.source = {
+        url,
+        type: $("#qp-type").value,
+        quality: $("#qp-quality").value.trim(),
+        language: $("#qp-language").value.trim(),
+        premium_only: $("#qp-premium").checked
+      };
+    }
+
+    const submit = $("#qpf button");
+    submit.disabled = true;
+    submit.textContent = "Publishing...";
+
+    try {
+      const result = await api("/admin/titles/quick-publish", {
+        method: "POST",
+        body
+      });
+
+      m.close();
+
+      toast(
+        result.playable
+          ? "Movie published and playable"
+          : "Movie imported; add a licensed playback source",
+        result.playable ? "success" : "info"
+      );
+
+      done();
+    } catch (err) {
+      $("#qpfErr").textContent = err.message;
+      submit.disabled = false;
+      submit.textContent = "Import & Publish";
+    }
   };
 }
 function importForm(type, done) {

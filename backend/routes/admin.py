@@ -201,6 +201,63 @@ def delete_title(media_type, title_id):
 
 
 # ------------------------------------------------------------------ playback sources
+
+@bp.post("/titles/quick-publish")
+@admin_required
+def quick_publish():
+    data = v.json_body()
+
+    if v.media_type(data.get("media_type", "movie")) != "movie":
+        raise ApiError("Quick Publish currently supports movies.", 422, "validation_error")
+
+    tmdb_id = v.integer(data.get("tmdb_id"), None, 1, None, "tmdb_id")
+    if tmdb_id is None:
+        raise ApiError("TMDB ID is required.", 422, "validation_error")
+
+    if not tmdb.configured:
+        raise ApiError("TMDB_API_KEY is not configured.", 400, "tmdb_not_configured")
+
+    try:
+        movie_id, outcome = syncer.import_title("movie", tmdb_id)
+    except TMDBError as exc:
+        raise ApiError(f"TMDB: {exc}", 502, "tmdb_error")
+
+    # Try the configured, authorised MovieBox provider.
+    from services.playback import discover_from_providers
+    provider_sources = discover_from_providers("movie", movie_id)
+
+    # An admin can also supply an authorised direct stream.
+    manual_added = 0
+    raw_source = data.get("source")
+
+    if raw_source:
+        src = clean_source(raw_source)
+        if not src:
+            raise ApiError("Provide a valid HTTPS MP4 or HLS source.", 422, "validation_error")
+
+        manual_added = db.execute(
+            "INSERT INTO provider_sources "
+            "(provider, media_type, media_id, episode_id, source_url, source_type, "
+            "quality, language, subtitles, premium_only, is_active, last_checked_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
+            [
+                "manual", "movie", movie_id, 0, src["url"], src["type"],
+                src["quality"], src["language"], json.dumps(src["subtitles"]),
+                bool(raw_source.get("premium_only")), True, iso()
+            ]
+        )
+
+    cache.clear("home")
+    cache.clear("nosrc")
+
+    return ok({
+        "id": movie_id,
+        "outcome": outcome,
+        "provider_sources": provider_sources,
+        "manual_source_added": bool(manual_added),
+        "playable": bool(provider_sources or manual_added)
+    })
+
 @bp.get("/titles/<media_type>/<int:title_id>/sources")
 @admin_required
 def list_sources(media_type, title_id):
